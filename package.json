@@ -1,0 +1,19 @@
+{
+  "name": "ratiochat",
+  "version": "1.0.0",
+  "description": "RatioChat AI Wrapper for Pi Network",
+  "type": "module",
+  "main": "index.html",
+  "scripts": {
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^48.12.1"
+  }
+}

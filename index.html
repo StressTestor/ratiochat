@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RatioChat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            900: '#111827',
+                            800: '#1f2937',
+                            700: '#374151',
+                        },
+                        indigo: {
+                            600: '#4f46e5',
+                        },
+                        teal: {
+                            400: '#2dd4bf',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #111827;
+            color: #e5e7eb;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Sticky Header -->
+    <header class="sticky top-0 z-50 bg-gray-900 border-b border-gray-800 p-4 flex items-center justify-between shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20 border border-indigo-500/50">
+                <span class="text-white font-bold text-xl">R</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-tight leading-none">RatioChat</h1>
+                <p class="text-[10px] text-teal-400 font-medium uppercase tracking-wider">Unofficial AI</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Scrollable Chat Area -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth pb-24">
+        <!-- Welcome Message -->
+        <div class="flex justify-start animate-fade-in-up">
+            <div class="bg-gray-800 text-gray-200 rounded-2xl rounded-tl-none px-5 py-4 max-w-[85%] shadow-sm border border-gray-700/50">
+                <p class="leading-relaxed">Hello! I'm RatioChat. How can I help you with the Pi Network today?</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Fixed Input Bar -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 p-4 pb-6">
+        <form id="chat-form" class="flex items-center space-x-3 max-w-4xl mx-auto relative">
+            <input 
+                type="text" 
+                id="message-input" 
+                class="flex-1 bg-gray-800 text-white border border-gray-700 rounded-full px-6 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent placeholder-gray-500 transition-all shadow-inner"
+                placeholder="Ask about Pi Network..."
+                autocomplete="off"
+            >
+            <button 
+                type="submit" 
+                class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full p-4 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50 active:scale-95"
+                id="send-button"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                </svg>
+            </button>
+        </form>
+    </footer>
+
+    <script>
+        // Pi Network SDK Initialization
+        const onIncompletePaymentFound = (payment) => {
+            console.log("Incomplete payment found", payment);
+        };
+
+        try {
+            Pi.init({ version: "2.0", sandbox: true });
+            
+            // Authenticate user
+            Pi.authenticate(['username'], onIncompletePaymentFound).then(function(auth) {
+                console.log('User authenticated:', auth);
+            }).catch(function(error) {
+                console.error('Authentication failed:', error);
+            });
+        } catch (e) {
+            console.warn("Pi SDK not loaded or failed to init (expected if not in Pi Browser)", e);
+        }
+
+        const chatContainer = document.getElementById('chat-container');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        function appendMessage(content, isUser) {
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in-up`;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser 
+                ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-5 py-4 max-w-[85%] shadow-md shadow-indigo-900/20' 
+                : 'bg-gray-800 text-gray-200 rounded-2xl rounded-tl-none px-5 py-4 max-w-[85%] shadow-sm border border-gray-700/50';
+            
+            messageDiv.textContent = content;
+            wrapperDiv.appendChild(messageDiv);
+            chatContainer.appendChild(wrapperDiv);
+            
+            // Scroll to bottom
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function showThinking() {
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = 'flex justify-start thinking-bubble animate-fade-in-up';
+            wrapperDiv.id = 'thinking-indicator';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'bg-gray-800 text-teal-400 rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border border-gray-700/50 flex items-center space-x-1';
+            
+            // Simple dot animation
+            messageDiv.innerHTML = `
+                <span class="text-sm font-medium">Thinking</span>
+                <span class="animate-bounce delay-75">.</span>
+                <span class="animate-bounce delay-150">.</span>
+                <span class="animate-bounce delay-300">.</span>
+            `;
+            
+            wrapperDiv.appendChild(messageDiv);
+            chatContainer.appendChild(wrapperDiv);
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function removeThinking() {
+            const thinking = document.getElementById('thinking-indicator');
+            if (thinking) thinking.remove();
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Clear input
+            messageInput.value = '';
+            
+            // Display user message
+            appendMessage(message, true);
+
+            // Show thinking
+            showThinking();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                const data = await response.json();
+                
+                removeThinking();
+
+                if (response.ok) {
+                    appendMessage(data.reply, false);
+                } else {
+                    appendMessage("Error: " + (data.error || "Something went wrong"), false);
+                }
+            } catch (error) {
+                removeThinking();
+                console.error('Error:', error);
+                appendMessage("Sorry, I couldn't connect to the server.", false);
+            }
+        });
+
+        // Add simple fade-in animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in-up {
+                animation: fadeInUp 0.3s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
