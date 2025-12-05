@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "RatioChat AI Wrapper for Pi Network",
   "type": "module",
-  "main": "index.html",
   "scripts": {
     "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"

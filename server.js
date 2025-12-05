@@ -13,7 +13,7 @@ const port = 3000;
 app.use(express.json());
 
 // Serve static files
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // API Route adapter
 app.post('/api/chat', async (req, res) => {
