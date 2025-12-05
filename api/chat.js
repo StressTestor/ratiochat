@@ -39,6 +39,34 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
+    // Security: Verify Pi Network Token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    let username = 'Pioneer';
+
+    try {
+      const userResponse = await fetch('https://api.minepi.com/v2/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!userResponse.ok) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid Pi Network token' });
+      }
+
+      const userData = await userResponse.json();
+      username = userData.username;
+    } catch (err) {
+      console.error('Error verifying Pi token:', err);
+      // Fail safe: Block request if verification fails
+      return res.status(500).json({ error: 'Internal Server Error during verification' });
+    }
+
     if (!openai) {
       console.error('CRITICAL: OPENROUTER_API_KEY is missing in environment variables.');
       return res.status(500).json({ error: 'Internal Server Error' });
@@ -49,7 +77,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: 'system',
-          content: 'You are RatioChat, a helpful AI assistant for Pi Network Pioneers. You are UNOFFICIAL. You must REFUSE to predict the future price of Pi. If asked about price, state that value depends on utility.',
+          content: `You are RatioChat, a helpful AI assistant for Pi Network Pioneers. The user you are talking to is @${username}. You are UNOFFICIAL. You must REFUSE to predict the future price of Pi. If asked about price, state that value depends on utility.`,
         },
         { role: 'user', content: message },
       ],
