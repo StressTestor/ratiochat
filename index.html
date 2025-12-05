@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RatioChat</title>
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script>
@@ -98,7 +99,7 @@
         };
 
         try {
-            Pi.init({ version: "2.0", sandbox: true });
+            Pi.init({ version: "2.0", sandbox: false });
             
             // Authenticate user
             Pi.authenticate(['username'], onIncompletePaymentFound).then(function(auth) {
@@ -188,12 +189,13 @@
                 if (response.ok) {
                     appendMessage(data.reply, false);
                 } else {
-                    appendMessage("Error: " + (data.error || "Something went wrong"), false);
+                    console.error("API Error:", data.error);
+                    appendMessage("Network busy, please try again.", false);
                 }
             } catch (error) {
                 removeThinking();
                 console.error('Error:', error);
-                appendMessage("Sorry, I couldn't connect to the server.", false);
+                appendMessage("Network busy, please try again.", false);
             }
         });
 

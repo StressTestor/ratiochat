@@ -40,7 +40,8 @@ export default async function handler(req, res) {
     }
 
     if (!openai) {
-      return res.status(500).json({ error: 'OpenRouter API Key not configured on server' });
+      console.error('CRITICAL: OPENROUTER_API_KEY is missing in environment variables.');
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
 
     const completion = await openai.chat.completions.create({
