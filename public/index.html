@@ -48,6 +48,27 @@
             scrollbar-width: none;
             /* Firefox */
         }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.3s ease-out forwards;
+        }
+
+        .thinking-bubble {
+            /* Custom styling if needed */
+        }
     </style>
 </head>
 
@@ -97,6 +118,107 @@
         </form>
     </footer>
 
+    <script>
+        // Pi Network SDK Initialization
+        const onIncompletePaymentFound = (payment) => {
+            console.log("Incomplete payment found", payment);
+        };
+
+        let userToken = null;
+
+        try {
+            Pi.init({ version: "2.0", sandbox: true });
+
+            // Authenticate user
+            Pi.authenticate(['username'], onIncompletePaymentFound).then(function (auth) {
+                console.log('User authenticated:', auth);
+                userToken = auth.accessToken;
+            }).catch(function (error) {
+                console.error('Authentication failed:', error);
+            });
+        } catch (e) {
+            console.warn("Pi SDK not loaded or failed to init (expected if not in Pi Browser)", e);
+        }
+
+        const chatContainer = document.getElementById('chat-container');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        function appendMessage(content, isUser) {
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in-up`;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser
+                ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none px-5 py-4 max-w-[85%] shadow-md shadow-indigo-900/20'
+                : 'bg-gray-800 text-gray-200 rounded-2xl rounded-tl-none px-5 py-4 max-w-[85%] shadow-sm border border-gray-700/50';
+
+            messageDiv.textContent = content;
+            wrapperDiv.appendChild(messageDiv);
+            chatContainer.appendChild(wrapperDiv);
+
+            // Scroll to bottom
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function showThinking() {
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = 'flex justify-start thinking-bubble animate-fade-in-up';
+            wrapperDiv.id = 'thinking-indicator';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'bg-gray-800 text-teal-400 rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border border-gray-700/50 flex items-center space-x-1';
+
+            // Simple dot animation
+            messageDiv.innerHTML = `
+                <span class="text-sm font-medium">Thinking</span>
+                <span class="animate-bounce delay-75">.</span>
+                <span class="animate-bounce delay-150">.</span>
+                <span class="animate-bounce delay-300">.</span>
+            `;
+
+            wrapperDiv.appendChild(messageDiv);
+            chatContainer.appendChild(wrapperDiv);
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function removeThinking() {
+            const thinking = document.getElementById('thinking-indicator');
+            if (thinking) thinking.remove();
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            if (!userToken) {
+                appendMessage("Error: You must be authenticated with Pi Network to send messages.", false);
+                return;
+            }
+
+            // Clear input
+            messageInput.value = '';
+
+            // Display user message
+            appendMessage(message, true);
+
+            // Show thinking
+            showThinking();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                const data = await response.json();
+
                 removeThinking();
 
                 if (response.ok) {
@@ -111,19 +233,6 @@
                 appendMessage("Network busy, please try again.", false);
             }
         });
-
-        // Add simple fade-in animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeInUp {
-                from { opacity: 0; transform: translateY(10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .animate-fade-in-up {
-                animation: fadeInUp 0.3s ease-out forwards;
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 
