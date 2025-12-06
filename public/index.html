@@ -87,6 +87,11 @@
                 <p class="text-[10px] text-teal-400 font-medium uppercase tracking-wider">Unofficial AI</p>
             </div>
         </div>
+        <button id="donate-button"
+            class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-full font-medium transition-colors shadow-sm active:scale-95 flex items-center gap-1">
+            <span>Donate 1 Pi</span>
+            <span>🥧</span>
+        </button>
     </header>
 
     <!-- Scrollable Chat Area -->
@@ -128,6 +133,7 @@
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
+        const donateButton = document.getElementById('donate-button');
         let userToken = null;
 
         function appendMessage(content, isUser) {
@@ -197,6 +203,50 @@
                 appendMessage("System: Failed to load Pi SDK. Are you in the Pi Browser?", false);
             }
         })();
+
+        // Donation Logic
+        if (donateButton) {
+            donateButton.addEventListener('click', () => {
+                if (!userToken) {
+                    appendMessage("System: Please authenticate to donate.", false);
+                    return;
+                }
+
+                const paymentData = {
+                    amount: 1,
+                    memo: "RatioChat Donation",
+                    metadata: { type: "donation" }
+                };
+
+                const callbacks = {
+                    onReadyForServerApproval: (paymentId) => {
+                        // For the checklist, we can just approve locally or send to backend
+                        // Simple version: just log it
+                        console.log("Ready for approval:", paymentId);
+                        appendMessage("System: Payment initiated (Demo only - Backend approval pending)", false);
+                    },
+                    onReadyForServerCompletion: (paymentId, txid) => {
+                        console.log("Completed:", txid);
+                        appendMessage("System: Thanks for the Pi! 🥧", false);
+                    },
+                    onCancel: (paymentId) => {
+                        console.log("Cancelled", paymentId);
+                        appendMessage("System: Donation cancelled.", false);
+                    },
+                    onError: (error, payment) => {
+                        console.error("Error", error);
+                        appendMessage("System: Payment error occurred.", false);
+                    }
+                };
+
+                try {
+                    Pi.createPayment(paymentData, callbacks);
+                } catch (err) {
+                    console.error("Payment init error:", err);
+                    appendMessage("System: Failed to start payment.", false);
+                }
+            });
+        }
 
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
