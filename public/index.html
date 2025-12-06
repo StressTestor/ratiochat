@@ -189,17 +189,32 @@
         // Initialize Authentication
         (async function initPi() {
             try {
+                // Ensure Pi SDK is loaded
+                if (typeof Pi === 'undefined') {
+                    throw new Error("Pi SDK not found in window object. Are you in the Pi Browser?");
+                }
+
                 // Show initializing stats
-                const statusId = 'auth-status';
-                // appendMessage("System: Initializing Pi Network...", false);
+                if (authDebugLabel) authDebugLabel.textContent = "Auth: Initializing...";
 
                 Pi.init({ version: "2.0", sandbox: true });
 
                 // Authenticate user with payments scope
                 try {
                     const scopes = ['username', 'payments'];
-                    // NOTE: Pi.authenticate returns { accessToken: string, user: object }
-                    const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+
+                    // Create a timeout promise to prevent infinite hanging
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Auth timed out (15s). Did you Authorize the Sandbox?")), 15000)
+                    );
+
+                    console.log("Starting Pi.authenticate...");
+                    // Race: Auth vs Timeout
+                    const auth = await Promise.race([
+                        Pi.authenticate(scopes, onIncompletePaymentFound),
+                        timeoutPromise
+                    ]);
+
                     console.log('User authenticated:', auth);
 
                     // Assign to global variables
@@ -211,11 +226,11 @@
                         authDebugLabel.textContent = `Auth: YES (User: ${currentUser.username})`;
                         authDebugLabel.classList.remove('text-red-500');
                         authDebugLabel.classList.add('text-green-400');
+                        // appendMessage(`System: Authenticated as ${currentUser.username}`, false);
                     } else if (authDebugLabel) {
                         authDebugLabel.textContent = "Auth: Partial (No User Object)";
                     }
 
-                    // appendMessage(`System: Authenticated successfully!`, false);
                 } catch (authError) {
                     console.error('Authentication failed:', authError);
                     if (authDebugLabel) {
@@ -225,9 +240,9 @@
                     appendMessage("System: Authentication Failed. Error: " + (authError.message || JSON.stringify(authError)), false);
                 }
             } catch (e) {
-                console.warn("Pi SDK not loaded or failed to init", e);
+                console.warn("Pi SDK init error:", e);
                 if (authDebugLabel) authDebugLabel.textContent = "Auth: SDK Error";
-                appendMessage("System: Failed to load Pi SDK. Are you in the Pi Browser?", false);
+                appendMessage("System: Pi SDK Error: " + e.message, false);
             }
         })();
 
