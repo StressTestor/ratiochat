@@ -124,26 +124,11 @@
             console.log("Incomplete payment found", payment);
         };
 
-        let userToken = null;
-
-        try {
-            Pi.init({ version: "2.0", sandbox: true });
-
-            // Authenticate user
-            Pi.authenticate(['username'], onIncompletePaymentFound).then(function (auth) {
-                console.log('User authenticated:', auth);
-                userToken = auth.accessToken;
-            }).catch(function (error) {
-                console.error('Authentication failed:', error);
-            });
-        } catch (e) {
-            console.warn("Pi SDK not loaded or failed to init (expected if not in Pi Browser)", e);
-        }
-
         const chatContainer = document.getElementById('chat-container');
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
+        let userToken = null;
 
         function appendMessage(content, isUser) {
             const wrapperDiv = document.createElement('div');
@@ -187,6 +172,31 @@
             const thinking = document.getElementById('thinking-indicator');
             if (thinking) thinking.remove();
         }
+
+        // Initialize Authentication
+        (async function initPi() {
+            try {
+                // Show initializing stats
+                const statusId = 'auth-status';
+                // appendMessage("System: Initializing Pi Network...", false);
+
+                Pi.init({ version: "2.0", sandbox: true });
+
+                // Authenticate user
+                try {
+                    const auth = await Pi.authenticate(['username'], onIncompletePaymentFound);
+                    console.log('User authenticated:', auth);
+                    userToken = auth.accessToken;
+                    // appendMessage(`System: Authenticated successfully!`, false);
+                } catch (authError) {
+                    console.error('Authentication failed:', authError);
+                    appendMessage("System: Authentication Failed. Error: " + (authError.message || JSON.stringify(authError)), false);
+                }
+            } catch (e) {
+                console.warn("Pi SDK not loaded or failed to init", e);
+                appendMessage("System: Failed to load Pi SDK. Are you in the Pi Browser?", false);
+            }
+        })();
 
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
