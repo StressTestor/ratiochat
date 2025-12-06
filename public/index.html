@@ -124,6 +124,10 @@
     </footer>
 
     <script>
+        // Global variables for auth state
+        let currentUser = null;
+        let userToken = null;
+
         // Pi Network SDK Initialization
         const onIncompletePaymentFound = (payment) => {
             console.log("Incomplete payment found", payment);
@@ -134,7 +138,6 @@
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
         const donateButton = document.getElementById('donate-button');
-        let userToken = null;
 
         function appendMessage(content, isUser) {
             const wrapperDiv = document.createElement('div');
@@ -188,11 +191,17 @@
 
                 Pi.init({ version: "2.0", sandbox: true });
 
-                // Authenticate user
+                // Authenticate user with payments scope
                 try {
-                    const auth = await Pi.authenticate(['username'], onIncompletePaymentFound);
+                    const scopes = ['username', 'payments'];
+                    // NOTE: Pi.authenticate returns { accessToken: string, user: object }
+                    const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
                     console.log('User authenticated:', auth);
+
+                    // Assign to global variables
                     userToken = auth.accessToken;
+                    currentUser = auth.user;
+
                     // appendMessage(`System: Authenticated successfully!`, false);
                 } catch (authError) {
                     console.error('Authentication failed:', authError);
@@ -207,7 +216,9 @@
         // Donation Logic
         if (donateButton) {
             donateButton.addEventListener('click', () => {
-                if (!userToken) {
+                // Check Global Variable
+                if (!currentUser) {
+                    console.log("Donate clicked but currentUser is null. Token:", userToken);
                     appendMessage("System: Please authenticate to donate.", false);
                     return;
                 }
