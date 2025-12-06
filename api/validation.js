@@ -1,0 +1,3 @@
+export default function handler(req, res) {
+    res.status(200).send("7170780ecf90f587dd205513eba6d290f24b918cfe1e84f4fb6b0866d58ab24423f548f4fa7bbffe35ceed96af034fa0e1b569d7ca39a77be540cf298c529e46");
+}
