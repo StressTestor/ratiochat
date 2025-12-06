@@ -87,11 +87,14 @@
                 <p class="text-[10px] text-teal-400 font-medium uppercase tracking-wider">Unofficial AI</p>
             </div>
         </div>
-        <button id="donate-button"
-            class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-full font-medium transition-colors shadow-sm active:scale-95 flex items-center gap-1">
-            <span>Donate 1 Pi</span>
-            <span>🥧</span>
-        </button>
+        <div class="flex flex-col items-end gap-1">
+            <button id="donate-button"
+                class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-full font-medium transition-colors shadow-sm active:scale-95 flex items-center gap-1">
+                <span>Donate 1 Pi</span>
+                <span>🥧</span>
+            </button>
+            <span id="auth-debug" class="text-[10px] text-red-500 font-mono font-bold">Auth: Pending...</span>
+        </div>
     </header>
 
     <!-- Scrollable Chat Area -->
@@ -138,6 +141,7 @@
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
         const donateButton = document.getElementById('donate-button');
+        const authDebugLabel = document.getElementById('auth-debug');
 
         function appendMessage(content, isUser) {
             const wrapperDiv = document.createElement('div');
@@ -202,13 +206,27 @@
                     userToken = auth.accessToken;
                     currentUser = auth.user;
 
+                    // DEBUG: visual update
+                    if (authDebugLabel && currentUser) {
+                        authDebugLabel.textContent = `Auth: YES (User: ${currentUser.username})`;
+                        authDebugLabel.classList.remove('text-red-500');
+                        authDebugLabel.classList.add('text-green-400');
+                    } else if (authDebugLabel) {
+                        authDebugLabel.textContent = "Auth: Partial (No User Object)";
+                    }
+
                     // appendMessage(`System: Authenticated successfully!`, false);
                 } catch (authError) {
                     console.error('Authentication failed:', authError);
+                    if (authDebugLabel) {
+                        authDebugLabel.textContent = "Auth: FAILED";
+                    }
+                    alert("Auth Error: " + (authError.message || JSON.stringify(authError)));
                     appendMessage("System: Authentication Failed. Error: " + (authError.message || JSON.stringify(authError)), false);
                 }
             } catch (e) {
                 console.warn("Pi SDK not loaded or failed to init", e);
+                if (authDebugLabel) authDebugLabel.textContent = "Auth: SDK Error";
                 appendMessage("System: Failed to load Pi SDK. Are you in the Pi Browser?", false);
             }
         })();
@@ -219,6 +237,7 @@
                 // Check Global Variable
                 if (!currentUser) {
                     console.log("Donate clicked but currentUser is null. Token:", userToken);
+                    alert("Debug: currentUser is NULL. Please wait for Green Label.");
                     appendMessage("System: Please authenticate to donate.", false);
                     return;
                 }
